@@ -1,48 +1,38 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
-import os
 
-# URL of the website to scrape
-url = 'https://bluebirdarts.pk/product/signatureacrylics/'
+# URL of the Amazon page to scrape
+url = 'https://www.amazon.com/'
 
-# Send a GET request to the website
-response = requests.get(url)
+# User-Agent header to mimic a browser request
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
 
-# Check if the request was successful
-if response.status_code == 200:
-    # Parse the HTML content of the page
-    soup = BeautifulSoup(response.content, 'html.parser')
-    
-    # Find the container that holds the data (in this case, paint details)
-    paints = soup.find_all('div', class_='paint-item')
-    
-    # Create a list to store the extracted data
-    paint_datalist = []
+# Send a GET request to the URL
+response = requests.get(url, headers=headers)
 
-    # Extract the desired data for each paint item
-    for paint in paints:
-        name = paint.find('h2', class_='paint-name').text.strip()
-        color_code = paint.find('span', class_='color-code').text.strip()
-        price = paint.find('span', class_='price').text.strip()
-        
-        # Append the data to the list
-        paint_datalist.append([name, price, color_code])
+# Parse the HTML content
+soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Define the CSV file headers
-    headers = ['Name', 'Price', 'Color Code']
+# Extract product names
+product_names = []
+for product in soup.find_all('span', {'class': 'a-size-medium'}):
+    product_names.append(product.text.strip())
 
-    # Print the current working directory
-    print("Current working directory:", os.getcwd())
+# Print number of products found
+print(f'Found {len(product_names)} products.')
 
-    # Write the data to a CSV file
-    with open('paints.csv', 'w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(headers)
-        writer.writerows(paint_datalist)
+# Define CSV filename
+csv_filename = 'amazon_products.csv'
 
-    print("Data has been successfully written to paints.csv")
-else:
-    print(f"Failed to retrieve the webpage. Status code: {response.status_code}")
+# Write data to CSV file
+with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Product Name'])  # Write header row
+    for name in product_names:
+        writer.writerow([name])
 
-print("Hello")  # Just an additional message to check script execution
+print(f'Data has been scraped and saved to {csv_filename}.')
+                 
