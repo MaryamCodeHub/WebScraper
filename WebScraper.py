@@ -2,37 +2,42 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
-# URL of the Amazon page to scrape
-url = 'https://www.amazon.com/'
+# Define the URL of the books website
+URL = "http://books.toscrape.com/"  # Example books website
+response = requests.get(URL)
 
-# User-Agent header to mimic a browser request
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-}
+# Check if the request was successful
+if response.status_code == 200:
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # Create/open a CSV file to store the scraped data
+    with open('books_data.csv', mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        # Write the headers to the CSV file
+        writer.writerow(['Title', 'Price', 'Availability', 'Rating'])
+        
+        # Find all book containers
+        books = soup.find_all('article', class_='product_pod')
+        
+        for book in books:
+            # Get the title of the book
+            title = book.h3.a['title']
+            
+            # Get the price of the book
+            price = book.find('p', class_='price_color').text.strip()
+            
+            # Get the availability status of the book
+            availability = book.find('p', class_='instock availability').text.strip()
+            
+            # Get the rating of the book
+            rating_tag = book.find('p', class_='star-rating')
+            rating = rating_tag['class'][1] if rating_tag else 'No Rating'
+            
+            # Write the book data to the CSV file
+            writer.writerow([title, price, availability, rating])
 
-# Send a GET request to the URL
-response = requests.get(url, headers=headers)
+    print("Data has been successfully scraped and saved to 'books_data.csv'")
+else:
+    print(f"Failed to retrieve the website. Status code: {response.status_code}")
 
-# Parse the HTML content
-soup = BeautifulSoup(response.content, 'html.parser')
-
-# Extract product names
-product_names = []
-for product in soup.find_all('span', {'class': 'a-size-medium'}):
-    product_names.append(product.text.strip())
-
-# Print number of products found
-print(f'Found {len(product_names)} products.')
-
-# Define CSV filename
-csv_filename = 'amazon_products.csv'
-
-# Write data to CSV file
-with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['Product Name'])  # Write header row
-    for name in product_names:
-        writer.writerow([name])
-
-print(f'Data has been scraped and saved to {csv_filename}.')
                  
